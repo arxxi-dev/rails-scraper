@@ -1,11 +1,13 @@
 # frozen_string_literal: true
 
 require 'nokogiri'
+require 'open-uri'
 
 # This class is responsible to scrape the fields in given url
 class Scrape
   SUPPORTED_URL_SCHEMES = %w[http https].freeze
   META_FIELD = 'meta'
+  UNSUPPORTED_URL_SCHEME = 'This URL is not supported'
 
   def initialize(url, fields)
     @url = url
@@ -15,8 +17,8 @@ class Scrape
 
   def call
     page_content = fetch_page_content
-    data = scrape_data(page_content)
-    build_response(data)
+    scrape_data(page_content)
+    build_response(@result)
   rescue StandardError => e
     build_response(nil, e.message)
   end
@@ -26,7 +28,7 @@ class Scrape
   def fetch_page_content
     uri = URI.parse(@url)
 
-    return unless safe_url?(uri)
+    raise StandardError, UNSUPPORTED_URL_SCHEME unless safe_url?(uri)
 
     URI.open(uri).read
   rescue OpenURI::HTTPError => e
@@ -49,7 +51,7 @@ class Scrape
     return if @fields[:meta].empty?
 
     @result[:meta] = @fields[:meta].each_with_object({}) do |meta_attr, meta_result|
-      meta_result[meta_attr] = parsed_data.at_css("meta[name='#{meta_attr}']")&.text&.strip
+      meta_result[meta_attr] = parsed_data.at_css("meta[name='#{meta_attr}']")[:content]
     end
   end
 
