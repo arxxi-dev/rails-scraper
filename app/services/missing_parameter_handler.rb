@@ -13,7 +13,7 @@ class MissingParameterHandler
 
   def call
     if required_attributes_present?
-      build_response(true, [])
+      build_response
     else
       build_response(false, PARAM_MISSING)
     end

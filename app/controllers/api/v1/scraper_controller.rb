@@ -4,9 +4,9 @@ module Api
   module V1
     # This api is responsible for returning after scraping the data as per params
     class ScraperController < ApplicationController
-      before_action :scrape_params, :verify_params, only: :scrape
+      before_action :scrape_params, :verify_params, only: :data
 
-      def scrape
+      def data
         result = Scrape.new(scrape_params[:url], scrape_params[:fields]).call
 
         if result[:data].present?
@@ -23,7 +23,7 @@ module Api
       end
 
       def verify_params
-        result = MissingParameterHandler.new(scraping_params, %i[url fields]).call
+        result = MissingParameterHandler.new(scrape_params, %i[url fields]).call
 
         error_response(result[:errors]) unless result[:success]
       end

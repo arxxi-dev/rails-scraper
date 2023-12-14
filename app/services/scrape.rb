@@ -5,14 +5,16 @@ require 'nokogiri'
 # This class is responsible to scrape the fields in given url
 class Scrape
   SUPPORTED_URL_SCHEMES = %w[http https].freeze
+  META_FIELD = 'meta'
 
   def initialize(url, fields)
     @url = url
     @fields = fields
+    @result = {}
   end
 
   def call
-    page_content = fetch_page_content(@url)
+    page_content = fetch_page_content
     data = scrape_data(page_content)
     build_response(data)
   rescue StandardError => e
@@ -21,8 +23,8 @@ class Scrape
 
   private
 
-  def fetch_page_content(url)
-    uri = URI.parse(url)
+  def fetch_page_content
+    uri = URI.parse(@url)
 
     return unless safe_url?(uri)
 
@@ -33,9 +35,22 @@ class Scrape
 
   def scrape_data(page_content)
     parsed_data = Nokogiri::HTML(page_content)
-    @fields.each_with_object({}) do |(field_name, selector), result|
-      result[field_name] = parsed_data.css(selector)&.text&.strip
-		end
+    scrape_fields_with_css_selectors(parsed_data)
+    scrape_fields_with_meta_attr(parsed_data)
+  end
+
+  def scrape_fields_with_css_selectors(parsed_data)
+    @fields.each do |field_name, selector|
+      @result[field_name] = parsed_data.css(selector)&.text&.strip
+    end
+  end
+
+  def scrape_fields_with_meta_attr(parsed_data)
+    return if @fields[:meta].empty?
+
+    @result[:meta] = @fields[:meta].each_with_object({}) do |meta_attr, meta_result|
+      meta_result[meta_attr] = parsed_data.at_css("meta[name='#{meta_attr}']")&.text&.strip
+    end
   end
 
   def safe_url?(uri)
