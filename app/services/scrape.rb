@@ -5,6 +5,9 @@ require 'open-uri'
 
 # This class is responsible to scrape the fields in given url
 class Scrape
+  # If we want to scale and want these constants to be available throughout the app
+  # we can add them in `constants.rb` file and load that in initializer
+
   SUPPORTED_URL_SCHEMES = %w[http https].freeze
   META_FIELD = 'meta'
   UNSUPPORTED_URL_SCHEME = 'This URL is not supported'
@@ -16,6 +19,15 @@ class Scrape
   end
 
   def call
+    # This is minimal sort of caching applied for the sake of demonstration
+    # If we consider scaling it, We can check if the attributes received for the url
+    # exists in our Redis cache for the url or not, if it does pluck those attributes return
+    # otherwise, add the new computed attributes in the cache so next time these attribute dont
+    # miss cache
+
+    cached_result = read_cache
+    return cached_result if cached_result
+
     page_content = fetch_page_content
     scrape_data(page_content)
     build_response(@result)
@@ -57,6 +69,18 @@ class Scrape
 
   def safe_url?(uri)
     uri.scheme && SUPPORTED_URL_SCHEMES.include?(uri.scheme.downcase)
+  end
+
+  def read_cache
+    Rails.cache.read(cache_key)
+  end
+
+  def write_cache(data)
+    Rails.cache.write(cache_key, data, expires_in: 1.hour)
+  end
+
+  def cache_key
+    "scrape:#{@url}:#{@fields}"
   end
 
   def build_response(data = nil, errors = [])

@@ -6,12 +6,6 @@ module Api
     class ScraperController < ApplicationController
       before_action :scrape_params, :verify_params, only: :data
 
-      # Caching
-
-      # We can check if the attribute exists in our Redis or not, if it does return
-      # that field and attribute otherwise, invalidate the cache add the new attribute
-      # with the old one
-
       def data
         result = Scrape.new(scrape_params[:url], scrape_params[:fields]).call
 

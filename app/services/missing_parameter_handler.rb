@@ -22,7 +22,7 @@ class MissingParameterHandler
   private
 
   def required_attributes_present?
-    @required_params.all? { |param| @received_params[param] }
+    @required_params.all? { |param| @received_params[param].present? }
   end
 
   def build_response(success = true, errors = [])
